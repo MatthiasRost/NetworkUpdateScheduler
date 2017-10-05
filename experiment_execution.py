@@ -58,14 +58,14 @@ class ExperimentExecutor(object):
 
     def _create_partition_of_instances(self):
         self.instances_to_execute = {}
-        for server_number in range(self.number_of_slices):
-            self.instances_to_execute[server_number] = []
+        for slice_number in range(self.number_of_slices):
+            self.instances_to_execute[slice_number] = []
 
-        server_number = 0
+        slice_number = 0
 
         for x in range(self.instance_storage.number_of_instances):
-            self.instances_to_execute[server_number].append(x)
-            server_number = (server_number+1)% self.number_of_slices
+            self.instances_to_execute[slice_number].append(x)
+            slice_number = (slice_number+1)% self.number_of_slices
 
 
 
