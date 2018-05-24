@@ -438,7 +438,7 @@ class InstanceStorage(object):
             counter += 1
         if novel_instance:
             generated_instance_representations.add(instance_representation)
-            print "generated {} many instances".format(generated_instance_representations)
+            print "generated {} many instances".format(len(generated_instance_representations))
         if not novel_instance:
             raise ValueError("Could not generate novel instance!")
 
