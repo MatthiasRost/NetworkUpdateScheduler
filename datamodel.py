@@ -433,9 +433,12 @@ class InstanceStorage(object):
             instance_representation = instance.get_sequence_representation()
             if instance_representation not in generated_instance_representations:
                 novel_instance = True
+            else:
+                print "not a novel instance"
             counter += 1
         if novel_instance:
             generated_instance_representations.add(instance_representation)
+            print generated_instance_representations
         if not novel_instance:
             raise ValueError("Could not generate novel instance!")
 
