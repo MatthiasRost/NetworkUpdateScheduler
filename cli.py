@@ -188,7 +188,7 @@ def f_execute_experiments(instance_storage_filename,
                           timelimit=None,
                           threads=None,
                           mip_gap=None,
-                          numeric_focus=numeric_focus):
+                          numeric_focus=None):
     instance_storage = None
     with open(instance_storage_filename, "r") as f:
         print "\nReading instance storage from {}".format(instance_storage_filename)
@@ -235,6 +235,7 @@ def f_execute_experiments(instance_storage_filename,
 @click.option('--timelimit', type=click.INT, default=600)
 @click.option('--threads', type=click.INT, default=1)
 @click.option('--mip_gap', type=click.FLOAT, default=0.01)
+@click.option('--numeric_focus', type=click.INT, default=0)
 def write_bash_file_for_parallel_execution(filename_to_write,
                                            instance_storage_filename,
                                            output_base_name,
@@ -244,25 +245,27 @@ def write_bash_file_for_parallel_execution(filename_to_write,
                                            flow_extension,
                                            timelimit=None,
                                            threads=None,
-                                           mip_gap=None):
+                                           mip_gap=None,
+                                           numeric_focus=None):
 
-    check_input_range_execution_parameters(0, 1, timelimit, threads, mip_gap)
+    check_input_range_execution_parameters(0, 1, timelimit, threads, mip_gap, numeric_focus)
 
     output_file = "#!/bin/bash\n\n"
     for i in range(number_of_processes):
         output_file += "(python cli.py execute_experiments {} {} {} {} {} {} {} " \
-                       "--timelimit {} --threads {} --mip_gap {} | tee -i {}_sub_{}.log) &\n".format(instance_storage_filename,
-                                                                                                     output_base_name,
-                                                                                                     i,
-                                                                                                     number_of_processes,
-                                                                                                     decision_variant,
-                                                                                                     strong_loop_freedom,
-                                                                                                     flow_extension,
-                                                                                                     timelimit,
-                                                                                                     threads,
-                                                                                                     mip_gap,
-                                                                                                     output_base_name,
-                                                                                                     i)
+                       "--timelimit {} --threads {} --mip_gap {} --numeric_focus {} | tee -i {}_sub_{}.log) &\n".format(instance_storage_filename,
+                                                                                                                        output_base_name,
+                                                                                                                        i,
+                                                                                                                        number_of_processes,
+                                                                                                                        decision_variant,
+                                                                                                                        strong_loop_freedom,
+                                                                                                                        flow_extension,
+                                                                                                                        timelimit,
+                                                                                                                        threads,
+                                                                                                                        mip_gap,
+                                                                                                                        numeric_focus,
+                                                                                                                        output_base_name,
+                                                                                                                        i)
 
     with open(filename_to_write, 'w') as f:
         f.write(output_file)
