@@ -417,19 +417,25 @@ class InstanceStorage(object):
         self.numeric_index_to_parameter = {}
         self.number_of_instances = 0
 
-    def _generate_instance_according_to_parameters(self, index, instance_generation_parameters, maximum_iterations):
+        self.random_instance = random.Random()
+        self.random_instance.seed(self.seed)
+
+    def _generate_unique_instance_according_to_parameters(self, index, instance_generation_parameters, generated_instance_representations, maximum_iterations):
         novel_instance = False
         instance = None
+        instance_representation = None
         counter = 0
         while not novel_instance and counter < maximum_iterations:
             instance = NetworkUpdateInstance()
             instance.generate_randomly(instance_generation_parameters.nodes,
                                        instance_generation_parameters.number_wps,
-                                       random_instance=random_instance)
+                                       random_instance=self.random_instance)
             instance_representation = instance.get_sequence_representation()
             if instance_representation not in generated_instance_representations:
                 novel_instance = True
             counter += 1
+        if novel_instance:
+            generated_instance_representations.add(instance_representation)
         if not novel_instance:
             raise ValueError("Could not generate novel instance!")
 
@@ -438,8 +444,7 @@ class InstanceStorage(object):
         self.numeric_index_to_parameter[index] = instance_generation_parameters
 
     def generate(self, index_offset=0, maximum_iterations=10000):
-        random_instance = random.Random()
-        random_instance.seed(self.seed)
+
         index = index_offset
 
         generated_instance_representations = set()
@@ -453,7 +458,7 @@ class InstanceStorage(object):
                                                                               number_wps=0,
                                                                               index=params[0])
 
-                self._generate_instance_according_to_parameters(index, instance_generation_parameters, maximum_iterations)
+                self._generate_unique_instance_according_to_parameters(index, instance_generation_parameters, generated_instance_representations, maximum_iterations)
 
                 index += 1
         else:
@@ -465,7 +470,7 @@ class InstanceStorage(object):
                                                                               number_wps=params[0],
                                                                               index=params[1])
 
-                self._generate_instance_according_to_parameters(index, instance_generation_parameters, maximum_iterations)
+                self._generate_unique_instance_according_to_parameters(index, instance_generation_parameters, generated_instance_representations, maximum_iterations)
 
                 index += 1
 
