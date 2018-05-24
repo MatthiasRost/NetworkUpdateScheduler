@@ -574,7 +574,7 @@ class ExperimentStorage(object):
 
 class GurobiSettings(object):
 
-    def __init__(self, timelimit=None, threads=None, mip_gap=None, numeric_focus):
+    def __init__(self, timelimit=None, threads=None, mip_gap=None, numeric_focus=None):
         self.timelimit = timelimit
         self.threads = threads
         self.mip_gap = mip_gap
