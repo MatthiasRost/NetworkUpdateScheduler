@@ -121,7 +121,7 @@ def from_yes_no_both_to_list(string_value):
         result.append(False)
     return result
 
-def check_input_range_execution_parameters(slice_to_execute, number_of_slices, timelimit, threads, mip_gap):
+def check_input_range_execution_parameters(slice_to_execute, number_of_slices, timelimit, threads, mip_gap, numeric_focus):
     if slice_to_execute < 0 or slice_to_execute >= number_of_slices:
         raise Exception("The slice to be executed must be in the range [0,1,...,number_of_slices-1]")
 
@@ -131,6 +131,8 @@ def check_input_range_execution_parameters(slice_to_execute, number_of_slices, t
         raise Exception("Thread parameter must lie in the interval [1,...,{}].".format(multiprocessing.cpu_count()))
     if mip_gap < 0 or mip_gap > 1:
         raise Exception("mip_gap parameter must be in the interval [0,1]")
+    if numeric_focus < 0 or numeric_focus > 3:
+        raise Exception("numeric_focus parameter must be in {0,1,2,3}")
 
 @cli.command()
 @click.argument('instance_storage_filename')
@@ -143,6 +145,7 @@ def check_input_range_execution_parameters(slice_to_execute, number_of_slices, t
 @click.option('--timelimit', type=click.INT, default=600)
 @click.option('--threads', type=click.INT, default=1)
 @click.option('--mip_gap', type=click.FLOAT, default=0.001)
+@click.option('--numeric_focus', type=click.INT, default=0)
 def execute_experiments(instance_storage_filename,
                         output_base_name,
                         slice_to_execute,
@@ -152,7 +155,8 @@ def execute_experiments(instance_storage_filename,
                         flow_extension,
                         timelimit=None,
                         threads=None,
-                        mip_gap=None):
+                        mip_gap=None,
+                        numeric_focus=None):
 
     check_input_range_execution_parameters(slice_to_execute, number_of_slices, timelimit, threads, mip_gap)
 
@@ -169,7 +173,8 @@ def execute_experiments(instance_storage_filename,
                           flow_extension_choices=flow_extension_list,
                           timelimit=timelimit,
                           threads=threads,
-                          mip_gap=mip_gap)
+                          mip_gap=mip_gap,
+                          numeric_focus=numeric_focus)
 
 
 
@@ -182,7 +187,8 @@ def f_execute_experiments(instance_storage_filename,
                           flow_extension_choices,
                           timelimit=None,
                           threads=None,
-                          mip_gap=None):
+                          mip_gap=None,
+                          numeric_focus=numeric_focus):
     instance_storage = None
     with open(instance_storage_filename, "r") as f:
         print "\nReading instance storage from {}".format(instance_storage_filename)
@@ -202,7 +208,8 @@ def f_execute_experiments(instance_storage_filename,
 
     gurobi_settings = dm.GurobiSettings(timelimit=timelimit,
                                         threads=threads,
-                                        mip_gap=mip_gap)
+                                        mip_gap=mip_gap,
+                                        numeric_focus=numeric_focus)
 
     executor = ee.ExperimentExecutor(instance_storage,
                                      slice_to_execute,

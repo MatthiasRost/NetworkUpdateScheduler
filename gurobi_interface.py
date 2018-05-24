@@ -58,6 +58,7 @@ class ModelCreator(object):
         self.timelimit = gurobi_settings.timelimit
         self.threads = gurobi_settings.threads
         self.mip_gap = gurobi_settings.mip_gap
+        self.numeric_focus = gurobi_settings.numeric_focus
 
         self.rounds = None
         self.pre_rounds =  None
@@ -104,6 +105,7 @@ class ModelCreator(object):
         self.model.setParam("Threads", self.threads)
         self.model.setParam("TimeLimit", self.timelimit)
         self.model.setParam("MIPGap", self.mip_gap)
+        self.model.setParam("NumericFocus", self.numeric_focus)
         #self.model.setParam("Presolve", 0)
 
         self.model.optimize(master_callback)

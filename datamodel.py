@@ -574,10 +574,11 @@ class ExperimentStorage(object):
 
 class GurobiSettings(object):
 
-    def __init__(self, timelimit=None, threads=None, mip_gap=None):
+    def __init__(self, timelimit=None, threads=None, mip_gap=None, numeric_focus):
         self.timelimit = timelimit
         self.threads = threads
         self.mip_gap = mip_gap
+        self.numeric_focus = numeric_focus
 
         if self.timelimit is None:
             self.timelimit = 600
@@ -585,6 +586,8 @@ class GurobiSettings(object):
             self.threads = 1
         if self.mip_gap is None:
             self.mip_gap = 0.01
+        if self.numeric_focus is None:
+            self.numeric_focus = 0
 
 def is_infeasible_status(status):
     result = False
