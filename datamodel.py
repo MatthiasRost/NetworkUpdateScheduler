@@ -417,7 +417,7 @@ class InstanceStorage(object):
         self.numeric_index_to_parameter = {}
         self.number_of_instances = 0
 
-    def _generate_instance_according_to_parameters(self, index, instance_generation_parameters):
+    def _generate_instance_according_to_parameters(self, index, instance_generation_parameters, maximum_iterations):
         novel_instance = False
         instance = None
         counter = 0
@@ -453,7 +453,7 @@ class InstanceStorage(object):
                                                                               number_wps=0,
                                                                               index=params[0])
 
-                self._generate_instance_according_to_parameters(index, instance_generation_parameters)
+                self._generate_instance_according_to_parameters(index, instance_generation_parameters, maximum_iterations)
 
                 index += 1
         else:
@@ -465,7 +465,7 @@ class InstanceStorage(object):
                                                                               number_wps=params[0],
                                                                               index=params[1])
 
-                self._generate_instance_according_to_parameters(index, instance_generation_parameters)
+                self._generate_instance_according_to_parameters(index, instance_generation_parameters, maximum_iterations)
 
                 index += 1
 
