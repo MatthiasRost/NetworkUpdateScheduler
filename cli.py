@@ -158,7 +158,7 @@ def execute_experiments(instance_storage_filename,
                         mip_gap=None,
                         numeric_focus=None):
 
-    check_input_range_execution_parameters(slice_to_execute, number_of_slices, timelimit, threads, mip_gap)
+    check_input_range_execution_parameters(slice_to_execute, number_of_slices, timelimit, threads, mip_gap, numeric_focus)
 
     decision_choice_list = from_yes_no_both_to_list(decision_variant)
     strong_loop_freedom_list = from_yes_no_both_to_list(strong_loop_freedom)
