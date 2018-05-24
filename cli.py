@@ -28,7 +28,8 @@ def cli():
 @click.option('--min_number_wps', type=click.INT, default=1)
 @click.option('--max_number_wps', type=click.INT, default=3)
 @click.option('--number_wps_step', type=click.INT, default=1)
-@click.option('--number_of_repetitions', type=click.INT, default=200)
+@click.option('--min_repetition_index', type=click.INT, default=0)
+@click.option('--max_repetition_index', type=click.INT, default=100)
 def generate_instances(instance_storage_name,
                        seed,
                        min_number_nodes,
@@ -37,11 +38,12 @@ def generate_instances(instance_storage_name,
                        min_number_wps,
                        max_number_wps,
                        number_wps_step,
-                       number_of_repetitions):
+                       min_repetition_index,
+                       max_repetition_index):
 
     nodes_list = [x for x in range(min_number_nodes, max_number_nodes+1, number_nodes_step)]
     wps_list = [x for x in range(min_number_wps, max_number_wps+1, number_wps_step)]
-    index_list = [x for x in range(0, number_of_repetitions)]
+    index_list = [x for x in range(min_repetition_index, max_repetition_index+1)]
 
     if len(nodes_list) == 0:
         raise Exception("Cannot create instances with min_number_nodes: {}, max_number_nodes: {}, number_nodes_step: {}".format(min_number_nodes,
@@ -140,7 +142,7 @@ def check_input_range_execution_parameters(slice_to_execute, number_of_slices, t
 @click.argument('flow_extension', type=click.Choice([CONSTANT_YES, CONSTANT_NO, CONSTANT_BOTH]))
 @click.option('--timelimit', type=click.INT, default=600)
 @click.option('--threads', type=click.INT, default=1)
-@click.option('--mip_gap', type=click.FLOAT, default=0.01)
+@click.option('--mip_gap', type=click.FLOAT, default=0.001)
 def execute_experiments(instance_storage_filename,
                         output_base_name,
                         slice_to_execute,
@@ -264,7 +266,7 @@ def write_bash_file_for_parallel_execution(filename_to_write,
 @click.argument("output_filename", type=click.Path())
 @click.argument('files', nargs=-1, type=click.Path())
 def merge_experiment_storages(output_filename, files):
-    resulting_experiment_storage = dm.ExperimentStorage(instance_storage_id="")
+    resulting_experiment_storage = dm.ExperimentStorage(instance_storage_id="", raw_instance_generation_parameters=None)
 
     for filename in files:
         other_experiment_storage = None
@@ -273,8 +275,12 @@ def merge_experiment_storages(output_filename, files):
             other_experiment_storage = cPickle.load(f)
         resulting_experiment_storage.import_results_from_other_experiment_storage(other_experiment_storage)
 
+
     with open(output_filename, "wb") as f:
         cPickle.dump(resulting_experiment_storage, f)
+
+    print "Written merged storage to {}".format(output_filename)
+
 
 
 @cli.command()
@@ -361,6 +367,61 @@ def create_extracted_experiment_data_storage(original_experiment_storage_filenam
     with open(extracted_experiment_data_storage_filename, "w") as f:
         cPickle.dump(extracted_experiment_storage, f)
     print "written extracted experiment data storage to {}".format(extracted_experiment_data_storage_filename)
+
+
+#default parameters are based on the sigmetrics publication (2016)
+@cli.command()
+@click.argument('seed', type=click.INT)
+@click.option('--number_nodes', type=click.INT, default=10)
+@click.option('--number_wps', type=click.INT, default=1)
+@click.option('--max_iterations', type=click.INT, default=1000)
+def inspect_uniqueness_of_instances(seed,
+                                    number_nodes,
+                                    number_wps,
+                                    max_iterations):
+    import time
+    start = time.time()
+
+
+    unique_tuples = set()
+    last_minutes = -1
+    for i in range(max_iterations):
+        instance = dm.NetworkUpdateInstance()
+        try:
+            instance.generate_randomly(number_nodes, number_wps)
+        except Exception as e:
+            print "\t\t\t\t\tfailed generation: {}".format(e)
+            continue
+
+        instance_representation = instance.get_sequence_representation()
+
+        current_time = time.time()
+
+        other_minutes, _ = divmod(current_time - start, 60)
+
+        hours, rem = divmod(current_time - start, 3600)
+        minutes, seconds = divmod(rem, 60)
+
+        if other_minutes != last_minutes:
+            last_minutes = other_minutes
+            print("{:0>2}:{:0>2}:{:0>2}: -- still working --".format(int(hours), int(minutes), int(seconds), len(unique_tuples)))
+
+        if instance_representation not in unique_tuples:
+
+            unique_tuples.add(instance_representation)
+
+            print("{:0>2}:{:0>2}:{:0>2}: {} many unique instances".format(int(hours), int(minutes), int(seconds), len(unique_tuples)))
+
+
+
+
+
+
+    print unique_tuples
+
+    print "\n\n\n{} unique instances among the {} generated.".format(len(unique_tuples),
+                                                                     number_of_repetitions)
+
 
 if __name__ == '__main__':
     cli()

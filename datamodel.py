@@ -156,7 +156,7 @@ class NetworkUpdateInstance(object):
                     f.write("F {} []\n".format(r))
 
 
-    def generate_randomly(self, number_of_nodes, number_of_waypoints, random_instance=None):
+    def generate_randomly(self, number_of_nodes, number_of_waypoints, random_instance=None, debug=False, max_iterations=10000):
         '''Generates a network update instance (uniformly) at random.
 
         :param number_of_nodes: number of nodes that the instance will have
@@ -175,22 +175,23 @@ class NetworkUpdateInstance(object):
 
         good = False
         wp_copies = None
-        while not good:
+        counter = 0
+        new_node_order = None
+        while not good and counter < max_iterations:
+
             good = True
             random_instance.shuffle(nodes_copy)
             #Arne taught me well
             wp_copies = copy.deepcopy(nodes_copy[0:number_of_waypoints])
             wp_copies.sort()
 
-        #at this point, the waypoints should be spread out "reasonably"
+            #at this point, the waypoints should be spread out "reasonably"
 
-        for i in range(number_of_waypoints):
-            self.wp[i] = wp_copies[i]
+            for i in range(number_of_waypoints):
+                self.wp[i] = wp_copies[i]
 
-        new_node_order = copy.deepcopy(self.nodes[1:number_of_nodes-1])
-        good = False
-        while not good:
-            good = True
+            new_node_order = copy.deepcopy(self.nodes[1:number_of_nodes-1])
+
             random_instance.shuffle(new_node_order)
 
             #check whether we don't have any overlaps in edges from
@@ -217,6 +218,14 @@ class NetworkUpdateInstance(object):
 
                     last_waypoint_position = current_wp
 
+            counter += 1
+            if counter % 100000 == 0:
+                if debug: print "no solution after {} many iterations".format(counter)
+
+        if not good:
+            raise ValueError("Instance Generation failed.")
+        if debug: print "instance generation took {} many tries".format(counter)
+
         self.new_edges.append((1,new_node_order[0]))
         for i in range(len(new_node_order)-1):
             self.new_edges.append((new_node_order[i], new_node_order[i+1]))
@@ -230,6 +239,19 @@ class NetworkUpdateInstance(object):
         self.number_of_nodes = number_of_nodes
         self.number_of_waypoints = number_of_waypoints
 
+    def get_sequence_representation(self):
+        list_representation = []
+        list_representation.append("nodes:")
+        list_representation.extend(self.nodes)
+        list_representation.append("old_edges:")
+        list_representation.extend(self.old_edges)
+        list_representation.append("new_edges:")
+        list_representation.extend(self.new_edges)
+        list_representation.append("way_points:")
+        for i in range(self.number_of_waypoints):
+            list_representation.append(self.wp[i])
+
+        return tuple(list_representation)
 
 
 class NetworkUpdateInstanceSolution(object):
@@ -296,13 +318,22 @@ class ModelConfiguration(object):
         self._hash = self._str.__hash__()
 
 
+    def __ne__(self, other):
+        result = (other == self)
+        if result == NotImplemented:
+            return NotImplemented
+        return not result
+
     def __eq__(self, other):
         if isinstance(other, self.__class__):
             if self.decision_variant == other.decision_variant and \
                             self.strong_loop_freedom == other.strong_loop_freedom and \
                             self.use_flow_extension == other.use_flow_extension:
                 return True
-        return False
+            else:
+                return False
+        else:
+            return NotImplemented
 
     def get_simple_tuple_representation(self):
         return (("Decision", self.decision_variant), ("FlowExtension", self.use_flow_extension), ("StrongLoopFreedom", self.strong_loop_freedom))
@@ -334,9 +365,25 @@ class InstanceGenerationParameters(object):
         return "InstanceGenerationParameters[nodes:{}, number_wps: {}, indices: {}]".format(self.nodes, self.number_wps, self.index)
 
     def __eq__(self, other):
-        if self.nodes != other.nodes or self.number_wps != other.number_wps or self.index != other.index:
+        if not isinstance(other, InstanceGenerationParameters):
+            # Don't recognise "other", so let *it* decide if we're equal
+            return NotImplemented
+        if self.nodes != other.nodes:
+            print "nodes do not match"
+            return False
+        if self.number_wps != other.number_wps:
+            print "number wps do not match"
+            return False
+        if self.index != other.index:
+            print "indices do not match"
             return False
         return True
+
+    def __ne__(self, other):
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            return result
+        return not result
 
 
 class InstanceStorage(object):
@@ -370,10 +417,32 @@ class InstanceStorage(object):
         self.numeric_index_to_parameter = {}
         self.number_of_instances = 0
 
-    def generate(self):
+    def _generate_instance_according_to_parameters(self, index, instance_generation_parameters):
+        novel_instance = False
+        instance = None
+        counter = 0
+        while not novel_instance and counter < maximum_iterations:
+            instance = NetworkUpdateInstance()
+            instance.generate_randomly(instance_generation_parameters.nodes,
+                                       instance_generation_parameters.number_wps,
+                                       random_instance=random_instance)
+            instance_representation = instance.get_sequence_representation()
+            if instance_representation not in generated_instance_representations:
+                novel_instance = True
+            counter += 1
+        if not novel_instance:
+            raise ValueError("Could not generate novel instance!")
+
+        self.instance_dictionary[index] = instance
+        self.contained_instances.append(index)
+        self.numeric_index_to_parameter[index] = instance_generation_parameters
+
+    def generate(self, index_offset=0, maximum_iterations=10000):
         random_instance = random.Random()
         random_instance.seed(self.seed)
-        index = 0
+        index = index_offset
+
+        generated_instance_representations = set()
 
         if len(self.raw_instance_generation_parameters.number_wps) == 0:
             # generate without waypoints
@@ -384,14 +453,8 @@ class InstanceStorage(object):
                                                                               number_wps=0,
                                                                               index=params[0])
 
-                instance = NetworkUpdateInstance()
-                instance.generate_randomly(instance_generation_parameters.nodes,
-                                           instance_generation_parameters.number_wps,
-                                           random_instance=random_instance)
+                self._generate_instance_according_to_parameters(index, instance_generation_parameters)
 
-                self.instance_dictionary[index] = instance
-                self.contained_instances.append(index)
-                self.numeric_index_to_parameter[index] = instance_generation_parameters
                 index += 1
         else:
             for params in itertools.product(self.raw_instance_generation_parameters.number_wps,
@@ -402,14 +465,8 @@ class InstanceStorage(object):
                                                                               number_wps=params[0],
                                                                               index=params[1])
 
-                instance = NetworkUpdateInstance()
-                instance.generate_randomly(instance_generation_parameters.nodes,
-                                           instance_generation_parameters.number_wps,
-                                           random_instance=random_instance)
+                self._generate_instance_according_to_parameters(index, instance_generation_parameters)
 
-                self.instance_dictionary[index] = instance
-                self.contained_instances.append(index)
-                self.numeric_index_to_parameter[index] = instance_generation_parameters
                 index += 1
 
         self.number_of_instances = index
@@ -461,7 +518,7 @@ class ExperimentStorage(object):
         self.contained_model_configurations.add(model_configuration_representation)
 
         if instance_index in self.instance_generation_parameter:
-            if instance_generation_parameter[instance_index] != instance_generation_parameter:
+            if self.instance_generation_parameter[instance_index] != instance_generation_parameter:
                 raise Exception("Instance generation parameter do not match.")
         else:
             self.instance_generation_parameter[instance_index] = instance_generation_parameter
@@ -473,6 +530,16 @@ class ExperimentStorage(object):
 
     def import_results_from_other_experiment_storage(self, other_experiment_storage):
         print "starting merge with other experiment storage.."
+
+        if self.raw_instance_generation_parameters is None and other_experiment_storage.raw_instance_generation_parameters is not None:
+            print "overriding raw instance generation parameters"
+            self.raw_instance_generation_parameters = other_experiment_storage.raw_instance_generation_parameters
+        else:
+            if self.raw_instance_generation_parameters != other_experiment_storage.raw_instance_generation_parameters:
+                print "Raw instance generation parameters do not match!"
+                print self.raw_instance_generation_parameters
+                print other_experiment_storage.raw_instance_generation_parameters
+
         if self.instance_storage_id != "" and self.instance_storage_id != other_experiment_storage.instance_storage_id:
             raise Exception("Cannot merge experiment results referring to different instance storages.")
         if self.instance_storage_id == "":
@@ -738,6 +805,10 @@ class ExtractedExperimentDataStorage(object):
                           netupdate_solution):
 
 
+        print "current data storage: \n\t{}".format(self.gen_params_to_model_to_extracted_data)
+        print "adding {} {} {}".format(instance_index, gen_params, model_configuration_representation, netupdate_solution)
+
+
 
         gen_params_tuple = InstanceGenerationParamsTuple(nodes=gen_params.nodes, number_wps=gen_params.number_wps, index=gen_params.index)
 
@@ -745,8 +816,8 @@ class ExtractedExperimentDataStorage(object):
         unique_model_configuration = None
         for model_configuration in self.unique_model_configurations:
             if model_configuration.decision_variant == model_configuration_representation[0][1] and \
-                            model_configuration.strong_loop_freedom == model_configuration_representation[1][1] and \
-                            model_configuration.use_flow_extension == model_configuration_representation[2][1]:
+                            model_configuration.use_flow_extension == model_configuration_representation[1][1] and \
+                            model_configuration.strong_loop_freedom == model_configuration_representation[2][1]:
                 unique_model_configuration = model_configuration
                 break
 
@@ -770,8 +841,10 @@ class ExtractedExperimentDataStorage(object):
             print "contained umcs..."
             for umc in self.gen_params_to_model_to_extracted_data[gen_params_tuple]:
                 print "\t", umc
-            print "new umc: ", unique_model_configuration
+            print "new umc: \n\t", unique_model_configuration
             raise Exception("Overwriting result previously already set.")
+
+
 
         self.gen_params_to_model_to_extracted_data[gen_params_tuple][unique_model_configuration] = extracted_data
 
