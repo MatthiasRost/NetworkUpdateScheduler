@@ -63,7 +63,7 @@ class ExperimentExecutor(object):
 
         slice_number = 0
 
-        for x in range(self.instance_storage.number_of_instances):
+        for x in self.instance_storage.contained_instances:
             self.instances_to_execute[slice_number].append(x)
             slice_number = (slice_number+1)% self.number_of_slices
 
