@@ -446,11 +446,12 @@ class InstanceStorage(object):
         self.contained_instances.append(index)
         self.numeric_index_to_parameter[index] = instance_generation_parameters
 
-    def generate(self, index_offset=0, maximum_iterations=10000):
+    def generate(self, index_offset=0, maximum_iterations=10000, generated_instance_representations=None):
 
         index = index_offset
 
-        generated_instance_representations = set()
+        if generated_instance_representations is None:
+            generated_instance_representations = set()
 
         if len(self.raw_instance_generation_parameters.number_wps) == 0:
             # generate without waypoints

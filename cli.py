@@ -18,6 +18,38 @@ def cli():
     pass
 
 
+def _get_instance_generation_settings(min_number_nodes,
+                                      max_number_nodes,
+                                      number_nodes_step,
+                                      min_number_wps,
+                                      max_number_wps,
+                                      number_wps_step,
+                                      min_repetition_index,
+                                      max_repetition_index):
+    nodes_list = [x for x in range(min_number_nodes, max_number_nodes + 1, number_nodes_step)]
+    wps_list = [x for x in range(min_number_wps, max_number_wps + 1, number_wps_step)]
+    index_list = [x for x in range(min_repetition_index, max_repetition_index + 1)]
+
+    if len(nodes_list) == 0:
+        raise Exception(
+            "Cannot create instances with min_number_nodes: {}, max_number_nodes: {}, number_nodes_step: {}".format(
+                min_number_nodes,
+                max_number_nodes,
+                number_nodes_step))
+
+    if len(wps_list) == 0:
+        click.confirm('"Instances will be generated WITHOUT any waypoints present. Do you want to continue?',
+                      abort=True)
+
+    if len(index_list) == 0:
+        raise Exception("Cannot create instances with number_of_repetitions: {}".format(number_of_repetitions))
+
+    instances_generation_parameters = dm.InstanceGenerationParameters(nodes=nodes_list,
+                                                                      number_wps=wps_list,
+                                                                      index=index_list)
+    return instances_generation_parameters
+
+
 #default parameters are based on the sigmetrics publication (2016)
 @cli.command()
 @click.argument('instance_storage_name')
@@ -41,26 +73,14 @@ def generate_instances(instance_storage_name,
                        min_repetition_index,
                        max_repetition_index):
 
-    nodes_list = [x for x in range(min_number_nodes, max_number_nodes+1, number_nodes_step)]
-    wps_list = [x for x in range(min_number_wps, max_number_wps+1, number_wps_step)]
-    index_list = [x for x in range(min_repetition_index, max_repetition_index+1)]
-
-    if len(nodes_list) == 0:
-        raise Exception("Cannot create instances with min_number_nodes: {}, max_number_nodes: {}, number_nodes_step: {}".format(min_number_nodes,
-                                                                                                                                max_number_nodes,
-                                                                                                                                number_nodes_step))
-
-    if len(wps_list) == 0:
-        click.confirm('"Instances will be generated WITHOUT any waypoints present. Do you want to continue?', abort=True)
-
-    if len(index_list) == 0:
-        raise Exception("Cannot create instances with number_of_repetitions: {}".format(number_of_repetitions))
-
-    instances_generation_parameters = dm.InstanceGenerationParameters(nodes=nodes_list,
-                                                                     number_wps=wps_list,
-                                                                     index=index_list)
-
-
+    instances_generation_parameters = _get_instance_generation_settings(min_number_nodes,
+                                                                       max_number_nodes,
+                                                                       number_nodes_step,
+                                                                       min_number_wps,
+                                                                       max_number_wps,
+                                                                       number_wps_step,
+                                                                       min_repetition_index,
+                                                                       max_repetition_index)
 
     output_filename, instance_storage = f_generate_instances(instance_storage_name,
                                                              seed,
@@ -73,9 +93,71 @@ def generate_instances(instance_storage_name,
         print "\nFile {} was written".format(output_filename)
 
 
+#default parameters are based on the sigmetrics publication (2016)
+@cli.command()
+@click.argument('instance_storage_name')
+@click.argument('seed', type=click.INT)
+@click.option('--min_number_nodes', type=click.INT, default=10)
+@click.option('--max_number_nodes', type=click.INT, default=30)
+@click.option('--number_nodes_step', type=click.INT, default=1)
+@click.option('--min_number_wps', type=click.INT, default=1)
+@click.option('--max_number_wps', type=click.INT, default=3)
+@click.option('--number_wps_step', type=click.INT, default=1)
+@click.option('--min_repetition_index', type=click.INT, default=0)
+@click.option('--max_repetition_index', type=click.INT, default=100)
+@click.argument('previous_instance_containers', nargs=-1, type=click.Path())
+def generate_additional_instances(instance_storage_name,
+                                  seed,
+                                  min_number_nodes,
+                                  max_number_nodes,
+                                  number_nodes_step,
+                                  min_number_wps,
+                                  max_number_wps,
+                                  number_wps_step,
+                                  min_repetition_index,
+                                  max_repetition_index):
+    instances_generation_parameters = _get_instance_generation_settings(min_number_nodes,
+                                                                        max_number_nodes,
+                                                                        number_nodes_step,
+                                                                        min_number_wps,
+                                                                        max_number_wps,
+                                                                        number_wps_step,
+                                                                        min_repetition_index,
+                                                                        max_repetition_index)
+
+    already_known_instance_representations = set()
+    maximal_seen_instance_index = -10000000000
+    for filename in previous_instance_containers:
+        with open(filename, "r") as f:
+            print "\nReading instance storage from {}".format(instance_storage_filename)
+            instance_storage = cPickle.load(f)
+            print "\t..done."
+
+            print "Starting to read instances..."
+            for instance_index, instance in instance_storage.contained_instances.iteritems():
+                already_known_instance_representations.add(instance.get_sequence_representation())
+                if instance_index > maximal_seen_instance_index:
+                    maximal_seen_instance_index = instance_index
+                print "\t\tread instance with id {} and added representation to storage container..".format(instance_index)
+
+
+    output_filename, instance_storage = f_generate_instances(instance_storage_name,
+                                                             seed,
+                                                             raw_instance_generation_parameters=instances_generation_parameters,
+                                                             index_offset=maximal_seen_instance_index+1,
+                                                             already_generated_instance_representations=already_known_instance_representations)
+
+    with open(output_filename, "w") as f:
+        print "\nWriting the instance storage container with id {} into file {}".format(instance_storage.identifier,
+                                                                                        output_filename)
+        cPickle.dump(instance_storage, f)
+        print "\nFile {} was written".format(output_filename)
+
 def f_generate_instances(instance_storage_name,
                          seed,
-                         raw_instance_generation_parameters):
+                         raw_instance_generation_parameters,
+                         index_offset=0,
+                         already_generated_instance_representations=None):
 
     output_filename = instance_storage_name + ".cpickle"
 
@@ -103,7 +185,8 @@ def f_generate_instances(instance_storage_name,
     instance_storage = dm.InstanceStorage(identifier=instance_storage_id,
                                       instance_generation_parameters=raw_instance_generation_parameters,
                                       seed=seed)
-    instance_storage.generate()
+    instance_storage.generate(index_offset=index_offset,
+                              generated_instance_representations=already_generated_instance_representations)
 
     print "\n...generated {} many instances.".format(instance_storage.number_of_instances)
 
