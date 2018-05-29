@@ -135,7 +135,8 @@ def generate_additional_instances(instance_storage_name,
             print "\t..done."
 
             print "Starting to read instances..."
-            for instance_index, instance in instance_storage.contained_instances.iteritems():
+            print instance_storage
+            for instance_index, instance in instance_storage.instance_dictionary.iteritems():
                 already_known_instance_representations.add(instance.get_sequence_representation())
                 if instance_index > maximal_seen_instance_index:
                     maximal_seen_instance_index = instance_index
