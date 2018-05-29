@@ -115,7 +115,8 @@ def generate_additional_instances(instance_storage_name,
                                   max_number_wps,
                                   number_wps_step,
                                   min_repetition_index,
-                                  max_repetition_index):
+                                  max_repetition_index,
+                                  previous_instance_containers):
     instances_generation_parameters = _get_instance_generation_settings(min_number_nodes,
                                                                         max_number_nodes,
                                                                         number_nodes_step,
