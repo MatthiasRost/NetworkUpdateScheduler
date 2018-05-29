@@ -130,7 +130,7 @@ def generate_additional_instances(instance_storage_name,
     maximal_seen_instance_index = -10000000000
     for filename in previous_instance_containers:
         with open(filename, "r") as f:
-            print "\nReading instance storage from {}".format(instance_storage_filename)
+            print "\nReading instance storage from {}".format(filename)
             instance_storage = cPickle.load(f)
             print "\t..done."
 
