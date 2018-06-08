@@ -93,7 +93,7 @@ def generate_instances(instance_storage_name,
         print "\nFile {} was written".format(output_filename)
 
 
-#default parameters are based on the sigmetrics publication (2016)
+#default parameters are based on our sigmetrics publication (2016)
 @cli.command()
 @click.argument('instance_storage_name')
 @click.argument('seed', type=click.INT)
@@ -104,7 +104,7 @@ def generate_instances(instance_storage_name,
 @click.option('--max_number_wps', type=click.INT, default=3)
 @click.option('--number_wps_step', type=click.INT, default=1)
 @click.option('--min_repetition_index', type=click.INT, default=0)
-@click.option('--max_repetition_index', type=click.INT, default=100)
+@click.option('--max_repetition_index', type=click.INT, default=200)
 @click.argument('previous_instance_containers', nargs=-1, type=click.Path())
 def generate_additional_instances(instance_storage_name,
                                   seed,
@@ -193,6 +193,36 @@ def f_generate_instances(instance_storage_name,
     print "\n...generated {} many instances.".format(instance_storage.number_of_instances)
 
     return output_filename, instance_storage
+
+
+
+@cli.command()
+@click.argument("output_filename", type=click.Path())
+@click.argument("new_identifier", type=click.STRING)
+@click.argument('files', nargs=-1, type=click.Path())
+def merge_instance_storages(output_filename, new_identifier, files):
+
+    resulting_instance_storage = None
+    current_instance_storage = None
+    for filename in files:
+        with open(filename, "r") as f:
+            print "Reading instance storage from {}".format(filename)
+            current_instance_storage = cPickle.load(f)
+
+        if resulting_instance_storage is None:
+            print "Initialized instance storage from {}".format(filename)
+            resulting_instance_storage = current_instance_storage
+        else:
+            print "Merging with instance storage from {}".format(filename)
+            resulting_instance_storage.merge_with_other_instance_storage(current_instance_storage)
+
+    print "Setting new identifier {} for instance storage".format(new_identifier)
+    resulting_instance_storage.identifier = new_identifier
+
+    with open(output_filename, "wb") as f:
+        cPickle.dump(resulting_instance_storage, f)
+
+
 
 CONSTANT_YES = "yes"
 CONSTANT_NO = "no"
@@ -358,9 +388,10 @@ def write_bash_file_for_parallel_execution(filename_to_write,
 
 
 @cli.command()
-@click.argument("output_filename", type=click.Path())
+@click.argument("output_filename", type=click.STRING)
+@click.option("--new_identifier", type=click.STRING, default=None)
 @click.argument('files', nargs=-1, type=click.Path())
-def merge_experiment_storages(output_filename, files):
+def merge_experiment_storages(output_filename, new_identifier, files):
     resulting_experiment_storage = dm.ExperimentStorage(instance_storage_id="", raw_instance_generation_parameters=None)
 
     for filename in files:
@@ -368,7 +399,7 @@ def merge_experiment_storages(output_filename, files):
         with open(filename, "r") as f:
             print "Reading experiment storage from {}".format(filename)
             other_experiment_storage = cPickle.load(f)
-        resulting_experiment_storage.import_results_from_other_experiment_storage(other_experiment_storage)
+        resulting_experiment_storage.import_results_from_other_experiment_storage(other_experiment_storage, new_identifier)
 
 
     with open(output_filename, "wb") as f:

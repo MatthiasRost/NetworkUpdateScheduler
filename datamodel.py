@@ -480,6 +480,64 @@ class InstanceStorage(object):
 
         self.number_of_instances = index
 
+    def merge_with_other_instance_storage(self, other_instance_storage):
+
+        if set(self.raw_instance_generation_parameters.nodes) != set(other_instance_storage.raw_instance_generation_parameters.nodes):
+            raise ValueError("Cannot merge instance storages with different node numbers.")
+
+        if set(self.raw_instance_generation_parameters.number_wps) != set(other_instance_storage.raw_instance_generation_parameters.number_wps):
+            raise ValueError("Cannot merge instance storages with different number of waypoints.")
+
+        if len(set(self.raw_instance_generation_parameters.index).intersection(set(other_instance_storage.raw_instance_generation_parameters.index))) > 0:
+            raise ValueError("Cannot merge instance storages with overlapping indices.")
+
+        def get_generation_param_tuple_repr(generation_params):
+            return (generation_params.nodes, generation_params.number_wps, generation_params.index)
+
+        known_instance_generation_parameters = set()
+
+        for instance_id, instance in self.instance_dictionary.iteritems():
+            generation_params = self.numeric_index_to_parameter[instance_id]
+            known_instance_generation_parameters.add(get_generation_param_tuple_repr(generation_params))
+
+        #merge instances
+        for instance_id in sorted(other_instance_storage.instance_dictionary.keys()):
+            if instance_id in self.instance_dictionary:
+                raise ValueError("Instance {} from other instance storage is already contained in instance storage. Aborting.".format(instance_id))
+
+            other_generation_params = other_instance_storage.numeric_index_to_parameter[instance_id]
+            other_generation_params_tuple = get_generation_param_tuple_repr(other_generation_params)
+            if other_generation_params_tuple in known_instance_generation_parameters:
+                raise ValueError("An instance having exactly the same generation parameters already existed... Aborting.")
+
+            print "Adding instance {}...".format(instance_id)
+            self.instance_dictionary[instance_id] = other_instance_storage.instance_dictionary[instance_id]
+            self.contained_instances.append(instance_id)
+            self.numeric_index_to_parameter[instance_id] = other_generation_params
+
+        #remove random instance and add seed to list of seeds
+        self.random_instance = None
+        if not isinstance(self.seed, list):
+            self.seed = [self.seed]
+        self.seed.append(other_instance_storage.seed)
+
+        # raw_instance_generation_parameters: merge lists and sort
+        self.raw_instance_generation_parameters.index.extend(other_instance_storage.raw_instance_generation_parameters.index)
+        self.raw_instance_generation_parameters.index = sorted(self.raw_instance_generation_parameters.index)
+        # note that all other raw_instance_generation parameters are the same as checked above and hence
+        # do not need to be merged
+
+        self.number_of_instances += other_instance_storage.number_of_instances
+
+        # turn the instance_id into a list
+        if not isinstance(self.identifier, list):
+            self.identifier = [self.identifier]
+        self.identifier.append(other_instance_storage.identifier)
+
+
+
+
+
 
 class ExperimentStorage(object):
 
@@ -537,7 +595,7 @@ class ExperimentStorage(object):
 
         self.instance_solutions[instance_index][model_configuration_representation] = solution
 
-    def import_results_from_other_experiment_storage(self, other_experiment_storage):
+    def import_results_from_other_experiment_storage(self, other_experiment_storage, new_identifier=None):
         print "starting merge with other experiment storage.."
 
         if self.raw_instance_generation_parameters is None and other_experiment_storage.raw_instance_generation_parameters is not None:
@@ -545,18 +603,29 @@ class ExperimentStorage(object):
             self.raw_instance_generation_parameters = other_experiment_storage.raw_instance_generation_parameters
         else:
             if self.raw_instance_generation_parameters != other_experiment_storage.raw_instance_generation_parameters:
-                print "Raw instance generation parameters do not match!"
-                print self.raw_instance_generation_parameters
-                print other_experiment_storage.raw_instance_generation_parameters
+                if set(self.raw_instance_generation_parameters.nodes) != set(
+                        other_instance_storage.raw_instance_generation_parameters.nodes):
+                    raise ValueError("Cannot merge instance storages with different node numbers.")
 
-        if self.instance_storage_id != "" and self.instance_storage_id != other_experiment_storage.instance_storage_id:
-            raise Exception("Cannot merge experiment results referring to different instance storages.")
-        if self.instance_storage_id == "":
-            self.instance_storage_id = other_experiment_storage.instance_storage_id
+                if set(self.raw_instance_generation_parameters.number_wps) != set(
+                        other_instance_storage.raw_instance_generation_parameters.number_wps):
+                    raise ValueError("Cannot merge instance storages with different number of waypoints.")
+
+                print "Raw instance generation parameters do not match at indexes; merging these (beware of errors in case that some instances are missing!)"
+
+                self.raw_instance_generation_parameters.index = sorted(set(self.raw_instance_generation_parameters.index).union(set(other_experiment_storage.raw_instance_generation_parameters.index)))
+
+        if new_identifier is not None:
+            self.instance_storage_id = new_identifier
+        else:
+            if self.instance_storage_id != "" and self.instance_storage_id != other_experiment_storage.instance_storage_id:
+                raise Exception("Cannot merge experiment results referring to different instance storages.")
+            if self.instance_storage_id == "":
+                self.instance_storage_id = other_experiment_storage.instance_storage_id
 
         for key, value in other_experiment_storage.contained_instances.iteritems():
             if key in self.contained_instances:
-                print "WARNING: experiment storage already contained instance"
+                raise ValueError("experiment storage already contained instance with key {}!!!".format(key))
             self.contained_instances[key] = value
 
         self.contained_model_configurations = self.contained_model_configurations.union(other_experiment_storage.contained_model_configurations)
