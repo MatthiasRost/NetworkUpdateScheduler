@@ -851,7 +851,7 @@ class ExtractedSolutionData(object):
         elif netup_instance_solution.status.is_infeasible():
             self.classification = self.CLASS_INFEASIBLE
         else:
-            self.netup_instance_solution = self.CLASS_UNKNOWN
+            self.classification = self.CLASS_UNKNOWN
 
     def __str__(self):
         return "{} {} {} {} {}".format(self.first_solution_time, self.first_solution, self.solution, self.runtime, self.classification)
