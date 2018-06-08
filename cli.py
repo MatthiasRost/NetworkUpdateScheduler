@@ -479,17 +479,22 @@ def create_extracted_experiment_data_storage(original_experiment_storage_filenam
                                              extracted_experiment_data_storage_filename):
 
     original_experiment_storage = None
+    print "Loading original solution storage at {}".format(original_experiment_storage_filename)
     with open(original_experiment_storage_filename, "r") as f:
         original_experiment_storage = cPickle.load(f)
 
+    print "Creating extracted data {}".format(extracted_experiment_data_storage_filename)
     extracted_experiment_storage = pps.create_extracted_experiment_data_storage(original_experiment_storage)
+
+    print "Collecting meta information ..."
     extracted_experiment_storage.collect_instance_generation_parameters()
+    print "Checking data ..."
     if extracted_experiment_storage.check_completeness_of_data():
-        print "data is complete!"
+        print "\tData is complete!"
     else:
-        raise Exception("Data is missing!")
+        raise ValueError("\tData is missing!")
 
-
+    print "Writing extracted storage to {}".format(extracted_experiment_data_storage_filename)
     with open(extracted_experiment_data_storage_filename, "w") as f:
         cPickle.dump(extracted_experiment_storage, f)
     print "written extracted experiment data storage to {}".format(extracted_experiment_data_storage_filename)
