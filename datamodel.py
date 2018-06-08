@@ -604,11 +604,11 @@ class ExperimentStorage(object):
         else:
             if self.raw_instance_generation_parameters != other_experiment_storage.raw_instance_generation_parameters:
                 if set(self.raw_instance_generation_parameters.nodes) != set(
-                        other_instance_storage.raw_instance_generation_parameters.nodes):
+                        other_experiment_storage.raw_instance_generation_parameters.nodes):
                     raise ValueError("Cannot merge instance storages with different node numbers.")
 
                 if set(self.raw_instance_generation_parameters.number_wps) != set(
-                        other_instance_storage.raw_instance_generation_parameters.number_wps):
+                        other_experiment_storage.raw_instance_generation_parameters.number_wps):
                     raise ValueError("Cannot merge instance storages with different number of waypoints.")
 
                 print "Raw instance generation parameters do not match at indexes; merging these (beware of errors in case that some instances are missing!)"
