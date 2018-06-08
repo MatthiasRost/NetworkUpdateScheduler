@@ -886,8 +886,8 @@ class ExtractedExperimentDataStorage(object):
                           netupdate_solution):
 
 
-        print "current data storage: \n\t{}".format(self.gen_params_to_model_to_extracted_data)
-        print "adding {} {} {}".format(instance_index, gen_params, model_configuration_representation, netupdate_solution)
+        #print "current data storage: \n\t{}".format(self.gen_params_to_model_to_extracted_data)
+        print "adding solution for instance with...\n\tindex {}\n\tgeneration parameters {}\n\tmodel configuration{}\n\n".format(instance_index, gen_params, model_configuration_representation)
 
 
 
