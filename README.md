@@ -24,7 +24,9 @@ The code is structured as follows:
  * **postprocess_solutions.py** allows to extract the most important data from the solution.
  * **cli.py** provides the command-line interface to generate, execute and evaluate the experiments (see below).
 
-# Generation of Instances
+# Using the Code
+
+## Generation of Instances
 
 In the following we shortly outline how the command-line interface can be used to generate and execute some instances. 
 Our examples are based on our most recent submission to the **IEEE/ACM journal Transactions on Networking**.
@@ -45,7 +47,7 @@ Multiple of these instance storages can be merged by using the following CLI com
 python $PYTHONPATH/cli.py merge_instance_storages ton_2018_netupdate_instances.cpickle ton_2018_netupdate_instances ton_2018_netupdate_instances_0_99.cpickle ton_2018_netupdate_instances_100_199.cpickle ton_2018_netupdate_instances_200_249.cpickle
 ```
 
-# Execution of Instances
+## Execution of Instances
 
 To allow for the parallel execution of instances, we use the notion of slices. In particular, the command to execute a slice of an instance
 storage may look like this:
@@ -68,7 +70,7 @@ appropriate **bash**-file:
 python $PYTHONPATH/cli.py write_bash_file_for_parallel_execution execution_ton_0_99_scriptmark.sh ton_2018_netupdate_instances_0_99.cpickle results_ton_2018_netupdate_instances_0_99 40 both both both --timelimit 1000 --threads 1 --mip_gap 0.0001 --numeric_focus 2
 ```
 
-# Aggregation of Instances Solutions
+## Aggregation of Instances Solutions
 
 After the results have been stored into various experiment solution storages, these results can be aggregated using the command-line
 interface using the following commmand:
@@ -81,7 +83,7 @@ Note that the solution storages contain a whole bunch of information on the solu
 of RAM is needed to aggregate the storages. For the 26,250 instances and the 8 different algorithms, roughly 32 GB of RAM 
 were necessary to aggregated the results, resulting in a 5 GB large cpickle file.
 
-# Extraction of Data to be Plotted  
+## Extraction of Data to be Plotted  
 
 As mostly only the  overall runtime or the overall solution quality is used for plotting purposes and the intermediate solution
 process is not of interest, we provide the functionality to extract the data of interest. Again, this is possible via a call of the CLI:
@@ -92,3 +94,14 @@ python $PYTHONPATH/cli.py create_extracted_experiment_data_storage ton_2018_netu
 
 The resulting cpickle file has a size of less than 30 MB. Compared to the previous size of more than 5 GB for storing all the data,
 the improvement is huge and the plotting can be done much quicker and without nearly as much RAM.
+
+# Data of our Latest IEEE/ACM Transactions of Networking Submission
+
+Within the **data/ton_2018_submission** directory, the instances and their results - as generated and executed according to the above 
+description - can be found together with the generated plots. The code for the plot generation is currently not contained within the
+repository but we plan on releasing it.
+
+# Contact
+
+Feel free to contact me at **mrost@inet.tu-berlin.de**.
+
