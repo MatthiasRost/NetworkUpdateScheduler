@@ -22,6 +22,7 @@ python -m network_update.cli create_extracted_experiment_data_storage netupdate_
 echo "CREATE PLOTS"
 
 mkdir -p ./plots
-python -m network_update.cli make_plots_ton_tpc netupdate_example_solutions_full_extracted.cpickle ./plots/
+python -m network_update.cli make_plots_ton_tpc  netupdate_example_solutions_full_extracted.cpickle ./plots/
+python -m network_update.cli make_plots_ton_lfru netupdate_example_solutions_full_extracted.cpickle ./plots/
 
 echo "ALL DONE!"
