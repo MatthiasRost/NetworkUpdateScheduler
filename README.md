@@ -29,7 +29,7 @@ The code has been the basis for computational evaluations within the following p
 
 The network_update library requires Python 2.7. Required python libraries: gurobipy, numpy, cPickle, matplotlib. 
 
-Gurobi must be installed and the .../gurobi64/lib directory added to the environment variable LD_LIBRARY_PATH.
+Gurobi must be installed and the .../linux64/lib directory added to the environment variable LD_LIBRARY_PATH.
 
 **Note**: Our source was only tested on Linux (specifically Ubuntu 14 and Ubuntu 16).  
 
