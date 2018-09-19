@@ -635,7 +635,7 @@ def plot_qualitative_information_of_modelconfigurations_using_barplot(plotting_d
 
     ax.set_xticks(pos)
     ax.set_xticklabels(labels, fontsize=fig_spec.x_axis_tick_label_fs, rotation=90)
-    ax.set_ylim(0, plotting_data.max_index)
+    ax.set_ylim(0, plotting_data.max_index+1)
     ax.set_yticklabels([0, 20, 40, 60, 80, 100], fontsize=fig_spec.y_axis_tick_label_fs)
     ax.set_axisbelow(True)
     ax.yaxis.grid(True)
