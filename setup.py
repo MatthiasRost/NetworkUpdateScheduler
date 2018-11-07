@@ -5,7 +5,7 @@ install_requires = [
     "pytest",
     "click",
     "numpy",
-    "matplotlib<=2.9"
+    "matplotlib>=2.2.0,<3"
 ]
 
 setup(
